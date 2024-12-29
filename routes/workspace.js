@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Workspace = require('../schemas/workspace.schema');
 const User = require('../schemas/user.schema');
+const { authMiddleware } = require('../middlewares/auth');
 
 // Get all workspaces for a user
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', authMiddleware ,async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -27,7 +28,7 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Share a workspace with another user
-router.post('/share', async (req, res) => {
+router.post('/share', authMiddleware, async (req, res) => {
     try {
         const { workspaceId, userId, accessType } = req.body;
 

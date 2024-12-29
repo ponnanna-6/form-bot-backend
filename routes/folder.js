@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Folder = require('../schemas/folder.schema'); // Assuming a Folder model exists
+const { authMiddleware } = require('../middlewares/auth');
 
 // Get all folders for a workspace
-router.get('/:workspaceId', async (req, res) => {
+router.get('/:workspaceId', authMiddleware,async (req, res) => {
     try {
         const { workspaceId } = req.params;
 
@@ -20,7 +21,7 @@ router.get('/:workspaceId', async (req, res) => {
 });
 
 // Create a new folder
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     try {
         const { workspaceId, name } = req.body;
 
@@ -38,7 +39,7 @@ router.post('/', async (req, res) => {
 });
 
 // Get a folder
-router.get('/id/:folderId', async (req, res) => {
+router.get('/id/:folderId', authMiddleware, async (req, res) => {
     try {
         const { folderId } = req.params;
 
@@ -54,7 +55,7 @@ router.get('/id/:folderId', async (req, res) => {
 });
 
 // Delete a folder
-router.delete('/:folderId', async (req, res) => {
+router.delete('/:folderId', authMiddleware, async (req, res) => {
     try {
         const { folderId } = req.params;
 
