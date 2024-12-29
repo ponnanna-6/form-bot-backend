@@ -17,7 +17,8 @@ const userSchema = mongoose.Schema({
     createdOn: {
         type: Date,
         default: Date.now
-    }
+    },
+    workspaces: [{ type: mongoose.Schema.ObjectId, ref: 'Workspace'}],
 })
 
 const UserModel = mongoose.model('User', userSchema)
