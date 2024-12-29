@@ -1,9 +1,112 @@
 const express = require('express');
 const router = express.Router();
+const Form = require('../schemas/form.schema');
+const {authMiddleware} = require('../middlewares/auth');
 
-// router.post('/create', createForm);
-// router.get('/:folderId', getForms); // Get forms for a specific folder
-// router.put('/:id', updateForm); // Update form content
-// router.delete('/:id', deleteForm);
+// Create a new form
+router.post('/', authMiddleware, async (req, res) => {
+    try {
+        const owner = req.user;
+        const { name, workspaceId, folderId} = req.body;
+
+        if (!name || !workspaceId) {
+            return res.status(400).json({ message: 'All fields are required.'});
+        }
+
+        const newForm = new Form({
+            name,
+            workspace: workspaceId,
+            folder: folderId,
+            owner,
+        });
+
+        await newForm.save();
+        res.status(200).json({ message: 'Form created successfully.', form: newForm });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating form.', error: error.message });
+    }
+});
+
+router.get('/:workspaceId/:folderId', authMiddleware, async (req, res) => {
+    try {
+        const { workspaceId, folderId } = req.params;
+
+        if(!workspaceId) {
+            return res.status(400).json({ message: 'Workspace ID is required.'});
+        }
+        const forms = await Form.find({
+            workspace: workspaceId,
+            folder: folderId != "root" ? folderId : { $exists: false },
+        });        
+        res.status(200).json({ forms });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching forms.', error: error.message });
+    }
+});
+
+// Delete a form
+router.delete('/:formId', authMiddleware, async (req, res) => {
+    try {
+        const { formId } = req.params;
+
+        const form = await Form.findById(formId);
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found.' });
+        }
+
+        await Form.deleteOne({ _id: formId });
+        res.status(200).json({ message: 'Form deleted successfully.'});
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Error deleting form.', error: error.message });
+    }
+});
+
+// Update form data
+router.put('/:formId', authMiddleware, async (req, res) => {
+    try {
+        const { formId } = req.params;
+        const { data } = req.body;
+
+        const updatedForm = await Form.findByIdAndUpdate(
+            formId,
+            { data },
+            { new: true }
+        );
+
+        if (!updatedForm) {
+            return res.status(404).json({ message: 'Form not found.' });
+        }
+
+        res.status(200).json({ message: 'Form updated successfully.', form: updatedForm });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating form.', error: error.message });
+    }
+});
+
+// Collect user response
+router.post('/:formId/response', authMiddleware, async (req, res) => {
+    try {
+        const { formId } = req.params;
+        const { response } = req.body;
+
+        const form = await Form.findById(formId);
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found.' });
+        }
+
+        if (!Array.isArray(form.response)) {
+            form.response = [];
+        }
+
+        form.response.push(response);
+        form.submitCount += 1;
+
+        await form.save();
+        res.status(200).json({ message: 'Response collected successfully.', form });
+    } catch (error) {
+        res.status(500).json({ message: 'Error collecting response.', error: error.message });
+    }
+});
 
 module.exports = router;

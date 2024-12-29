@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Folder = require('../schemas/folder.schema'); // Assuming a Folder model exists
+const Folder = require('../schemas/folder.schema');
+const Workspace = require('../schemas/workspace.schema');
 const { authMiddleware } = require('../middlewares/auth');
 
 // Get all folders for a workspace
@@ -29,10 +30,25 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: "Workspace ID and folder name are required." });
         }
 
+        const workspace = await Workspace.findById(workspaceId);
+        
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found." });
+        }
+        
+        //folder with same name cannot exist
+        const folderExists = await Folder.findOne({ workspace: workspaceId, name });
+        if (folderExists) {
+            return res.status(400).json({ message: "Folder with the same name already exists." });
+        }
+
         const newFolder = new Folder({ workspace: workspaceId, name });
         await newFolder.save();
 
-        return res.status(201).json({ message: "Folder created successfully.", folder: newFolder });
+        workspace.folders.push(newFolder._id);
+        await workspace.save();
+
+        return res.status(200).json({ message: "Folder created successfully.", folder: newFolder });
     } catch (error) {
         return res.status(500).json({ message: "An error occurred while creating the folder.", error: error.message });
     }
@@ -64,7 +80,7 @@ router.delete('/:folderId', authMiddleware, async (req, res) => {
             return res.status(404).json({ message: "Folder not found." });
         }
 
-        await folder.remove();
+        await Folder.deleteOne({ _id: folderId });
         return res.status(200).json({ message: "Folder deleted successfully." });
     } catch (error) {
         return res.status(500).json({ message: "An error occurred while deleting the folder.", error: error.message });

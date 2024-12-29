@@ -6,7 +6,7 @@ const cors = require('cors')
 const indexRouter = require('./routes/index')
 const userRouter = require('./routes/user')
 const workspaceRouter = require('./routes/workspace')
-// const formRouter = require('./routes/form')
+const formRouter = require('./routes/form')
 const folderRouter = require('./routes/folder')
 
 dotenv.config()
@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use('/api/v1/', indexRouter)
 app.use('/api/v1/user/', userRouter)
 app.use('/api/v1/workspace/', workspaceRouter)
-// app.use('/api/v1/form/', formRouter)
+app.use('/api/v1/form/', formRouter)
 app.use('/api/v1/folder/', folderRouter)
 
 app.listen(process.env.PORT, (req, res) => {

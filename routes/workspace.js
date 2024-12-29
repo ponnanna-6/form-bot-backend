@@ -5,10 +5,9 @@ const User = require('../schemas/user.schema');
 const { authMiddleware } = require('../middlewares/auth');
 
 // Get all workspaces for a user
-router.get('/:userId', authMiddleware ,async (req, res) => {
+router.get('/:userId', authMiddleware, async (req, res) => {
     try {
         const { userId } = req.params;
-
         // Find workspaces owned by or shared with the user
         const workspaces = await Workspace.find({
             $or: [
@@ -30,10 +29,16 @@ router.get('/:userId', authMiddleware ,async (req, res) => {
 // Share a workspace with another user
 router.post('/share', authMiddleware, async (req, res) => {
     try {
-        const { workspaceId, userId, accessType } = req.body;
-
-        if (!workspaceId || !userId || !accessType) {
+        const userId = req.user;
+        const { email, accessType } = req.body;
+        if (!email || !accessType) {
             return res.status(400).json({ message: "Workspace ID, User ID, and Access Type are required." });
+        }
+
+        // Check if user exists
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
         }
 
         // Validate access type
@@ -42,32 +47,34 @@ router.post('/share', authMiddleware, async (req, res) => {
         }
 
         // Check if workspace exists
-        const workspace = await Workspace.findById(workspaceId);
+        let workspace = await Workspace.findOne({ owner: userId });
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found." });
         }
 
-        // Check if the user exists
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
         // Check if the user is already shared with
-        const alreadyShared = workspace.sharedWith.some(
-            (sharedUser) => sharedUser.user.toString() === userId
-        );
+        if (workspace.sharedWith && Array.isArray(workspace.sharedWith)) {
+            const alreadyShared = workspace.sharedWith.some(
+                (sharedUser) => sharedUser.user.toString() === userId
+            );
 
-        if (alreadyShared) {
-            return res.status(400).json({ message: "User already has access to this workspace." });
+            if (alreadyShared) {
+                return res.status(400).json({ message: "User already has access to this workspace." });
+            }
+            workspace.sharedWith.push({ user: user._id, accessType: accessType });
+        } else {
+            workspace.sharedWith = [{ user: user._id, accessType: accessType }];
         }
 
-        // Add user to sharedWith array
-        workspace.sharedWith.push({ user: userId, accessType });
+        console.log(workspace);
         await workspace.save();
 
+
+        console.log(workspace)
+        await workspace.save();
         return res.status(200).json({ message: "Workspace shared successfully.", workspace });
     } catch (error) {
+        console.log(error)
         return res.status(500).json({ message: "An error occurred while sharing the workspace.", error: error.message });
     }
 });
