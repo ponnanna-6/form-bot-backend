@@ -44,6 +44,37 @@ router.get('/:workspaceId/:folderId', authMiddleware, async (req, res) => {
     }
 });
 
+//get form by id
+router.get('/:formId', authMiddleware, async (req, res) => {
+    try {
+        const { formId } = req.params;
+        const form = await Form.findById(formId);
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found.' });
+        }
+        res.status(200).json({ form });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching form.', error: error.message });
+    }
+})
+
+//get form by id
+router.get('/public/share/access/:formId', async (req, res) => {
+    try {
+        const { formId } = req.params;
+        const form = await Form.findById(formId);
+        if (!form) {
+            return res.status(404).json({ message: 'Form not found.' });
+        }
+        form.viewCount += 1;
+        
+        await form.save();
+        res.status(200).json({ form });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching form.', error: error.message });
+    }
+})
+
 // Delete a form
 router.delete('/:formId', authMiddleware, async (req, res) => {
     try {
@@ -67,10 +98,9 @@ router.put('/:formId', authMiddleware, async (req, res) => {
     try {
         const { formId } = req.params;
         const { data } = req.body;
-
         const updatedForm = await Form.findByIdAndUpdate(
             formId,
-            { data },
+            { formData: data },
             { new: true }
         );
 
@@ -85,21 +115,21 @@ router.put('/:formId', authMiddleware, async (req, res) => {
 });
 
 // Collect user response
-router.post('/:formId/response', authMiddleware, async (req, res) => {
+router.post('/:formId/response', async (req, res) => {
     try {
         const { formId } = req.params;
-        const { response } = req.body;
+        const { data } = req.body;
 
         const form = await Form.findById(formId);
         if (!form) {
             return res.status(404).json({ message: 'Form not found.' });
         }
 
-        if (!Array.isArray(form.response)) {
-            form.response = [];
+        if (!Array.isArray(form.formResponse)) {
+            form.formResponse = [];
         }
 
-        form.response.push(response);
+        form.formResponse.push(data);
         form.submitCount += 1;
 
         await form.save();
