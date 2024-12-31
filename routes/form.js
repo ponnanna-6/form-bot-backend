@@ -97,10 +97,10 @@ router.delete('/:formId', authMiddleware, async (req, res) => {
 router.put('/:formId', authMiddleware, async (req, res) => {
     try {
         const { formId } = req.params;
-        const { data } = req.body;
+        const { data, name } = req.body;
         const updatedForm = await Form.findByIdAndUpdate(
             formId,
-            { formData: data },
+            { formData: data, name: name },
             { new: true }
         );
 
