@@ -129,7 +129,12 @@ router.post('/:formId/response', async (req, res) => {
             form.formResponse = [];
         }
 
-        form.formResponse.push(data);
+        const responseWithTime = {
+            ...data,
+            submittedAt: new Date(),
+        };
+
+        form.formResponse.push(responseWithTime);
         form.submitCount += 1;
 
         await form.save();
