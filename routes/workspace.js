@@ -26,6 +26,20 @@ router.get('/:userId', authMiddleware, async (req, res) => {
     }
 });
 
+//GET workspace by id
+router.get('/id/:workspaceId', authMiddleware, async (req, res) => {
+    try {
+        const { workspaceId } = req.params;
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found." });
+        }
+        return res.status(200).json({ workspace });
+    } catch (error) {
+        return res.status(500).json({ message: "An error occurred while fetching workspace.", error: error.message });
+    }
+});
+
 // Share a workspace with another user
 router.post('/share', authMiddleware, async (req, res) => {
     try {
