@@ -13,6 +13,11 @@ router.post('/', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'All fields are required.'});
         }
 
+        const alreadyExists = await Form.findOne({ name, workspace: workspaceId });
+        if (alreadyExists) {
+            return res.status(400).json({ message: 'Form with the same name already exists.'});
+        }
+
         const newForm = new Form({
             name,
             workspace: workspaceId,
